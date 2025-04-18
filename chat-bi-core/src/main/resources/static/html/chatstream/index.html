@@ -1,0 +1,1464 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>ChatStream流式输出测试</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.1.0/github-markdown.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/sql.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/java.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/languages/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.2/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@5.0.2/marked.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8f9fa;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    /* 修改主容器布局，确保对称 */
+    .main-container {
+      display: flex;
+      justify-content: center;
+      gap: 80px; /* 间隔增加为原来的2倍（从40px到80px） */
+      padding: 20px;
+      flex: 1;
+    }
+    
+    /* 统一左右两侧容器样式 */
+    .panel-container {
+      width: 100%;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+    }
+    
+    /* 左侧容器（ChatStream流式输出测试）宽度调整 */
+    .panel-container:first-child {
+      max-width: 720px; /* 480px × 1.5 = 720px */
+    }
+    
+    /* 右侧容器（API接口内容）保持原宽度 */
+    .panel-container:last-child {
+      max-width: 480px;
+    }
+    
+    /* 统一标题区域样式 */
+    .panel-header {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+    }
+    
+    /* 调整标题大小 */
+    .panel-title {
+      font-weight: 700;
+      color: #333;
+      margin: 0;
+      text-align: center;
+    }
+    
+    h1.panel-title {
+      font-size: 16px; /* 减小左侧标题大小 */
+    }
+    
+    h2.panel-title {
+      font-size: 16px; /* 保持右侧标题大小一致 */
+    }
+    
+    .panel-subtitle {
+      font-size: 14px;
+      color: #666;
+    }
+    
+    /* 状态面板样式 */
+    .status-panel {
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      color: #212529;
+      border-left: 4px solid #dee2e6;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      flex-shrink: 0;
+    }
+    
+    /* 按钮区域样式 */
+    .panel-controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      justify-content: center;
+    }
+    
+    /* 内容区域样式 */
+    .panel-content {
+      flex-grow: 1;
+      overflow-y: auto;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      min-height: 400px;
+      max-height: calc(90vh - 200px);
+    }
+    
+    /* 底部区域样式 */
+    .panel-footer {
+      margin-top: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    /* 保留其他原有样式 */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      background-color: white;
+    }
+    
+    /* API 内容字体调整 */
+    .api-content {
+      font-family: monospace;
+      font-size: 13px; /* 增大API字体大小 */
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    
+    .btn-custom {
+      transition: all 0.2s;
+    }
+    
+    .btn-custom:hover {
+      transform: translateY(-2px);
+    }
+    
+    /* 响应式调整 */
+    @media (max-width: 1300px) { /* 增加断点宽度以适应更宽的布局 */
+      .main-container {
+        flex-direction: column;
+        align-items: center;
+        gap: 30px; /* 垂直排列时减小间距 */
+      }
+      .panel-container,
+      .panel-container:first-child,
+      .panel-container:last-child {
+        max-width: 100%;
+        height: auto;
+      }
+      .panel-content {
+        max-height: 400px;
+      }
+    }
+    
+    /* 保留原有样式，但重命名类名 */
+    .connection-status, .api-header-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .status-message {
+      font-weight: 500;
+    }
+    .status-message.success {
+      border-left-color: #28a745;
+    }
+    .status-message.error {
+      border-left-color: #dc3545;
+    }
+    .time { 
+      color: #999; 
+      font-size: 12px; 
+      margin-right: 5px; 
+    }
+    .error { 
+      color: #dc3545;
+    }
+    .success { 
+      color: #28a745;
+    }
+    .content-item {
+      border: 1px solid #eee; 
+      border-radius: 8px; 
+      overflow: visible;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+      transition: all 0.2s;
+      animation: fadeIn 0.5s;
+      margin-bottom: 15px;
+      width: 100%;
+      break-inside: avoid;
+      max-width: 100%;
+    }
+    .content-item:hover {
+      box-shadow: 0 4px 8px rgba(0,0,0,0.08);
+    }
+    .content-header { 
+      background-color: #f8f9fa; 
+      padding: 8px 12px;
+      border-bottom: 1px solid #eee; 
+      font-weight: 600;
+      color: #495057;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      flex-wrap: wrap; /* 允许内容换行 */
+      gap: 5px; /* 添加间距 */
+    }
+    .content-header span {
+      max-width: 80%; /* 限制标题宽度 */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .content-type-badge {
+      font-size: 11px; /* 减小徽章字体 */
+      padding: 3px 6px;
+      border-radius: 4px;
+      background-color: rgba(0,0,0,0.05);
+      color: #6c757d;
+      font-weight: normal;
+      white-space: nowrap; /* 保持徽章不换行 */
+    }
+    .type-text { background-color: #e3f2fd; color: #0d6efd; }
+    .type-code { background-color: #fff8e1; color: #ff9800; }
+    .type-sql { background-color: #f1f8e9; color: #4caf50; }
+    .type-table { background-color: #f3e5f5; color: #9c27b0; }
+    .type-chart { background-color: #fce4ec; color: #e91e63; }
+    .content-body { 
+      padding: 12px; /* 减小内边距 */
+      overflow: visible;
+    }
+    .code-block, .sql-block { 
+      background-color: #f8f9fa; 
+      border-radius: 6px; 
+      margin: 0; 
+      overflow: auto; 
+      padding: 10px;
+      max-height: 300px; /* 限制代码块最大高度，超出时显示滚动条 */
+      white-space: pre;  /* 改为pre以避免过多换行 */
+      font-size: 12px;   /* 减小字体大小 */
+      line-height: 1.4;  /* 减小行高 */
+    }
+    .chart-container { 
+      width: 100%; 
+      height: 300px;
+      min-height: 200px;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-shrink: 0;
+    }
+    .status-badge {
+      padding: 5px 10px;
+      border-radius: 15px;
+      display: inline-block;
+      font-size: 13px;
+      margin-left: 10px;
+    }
+    .text-content {
+      line-height: 1.6;
+      color: #333;
+    }
+    .debug-panel {
+      margin-top: 15px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+      flex-shrink: 0;
+    }
+    .debug-toggle {
+      font-size: 14px;
+      cursor: pointer;
+      color: #6c757d;
+      margin-bottom: 5px;
+    }
+    .debug-info { 
+      background-color: #f8f9fa; 
+      border: 1px solid #eee; 
+      border-radius: 6px;
+      padding: 10px; 
+      font-family: monospace; 
+      font-size: 12px;
+      white-space: pre-wrap; 
+      height: 150px;
+      overflow-y: auto;
+      color: #555;
+      display: none;
+    }
+    
+    /* 表格样式优化 */
+    .table {
+      width: 100%;
+      margin-bottom: 0;
+      table-layout: fixed; /* 固定表格布局 */
+      font-size: 12px;
+      border-collapse: collapse;
+    }
+    
+    .table th, 
+    .table td {
+      padding: 5px 6px; /* 减小内边距 */
+      white-space: normal;
+      word-break: break-word;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px; /* 减小最大宽度 */
+      vertical-align: middle;
+      border: 1px solid #eee; /* 添加边框增强可读性 */
+    }
+    
+    .table th {
+      position: sticky;
+      top: 0;
+      background-color: #f8f9fa;
+      z-index: 1;
+      font-weight: 600;
+      text-align: left;
+      font-size: 11px; /* 减小表头字体 */
+    }
+    
+    .table-responsive {
+      overflow-x: auto;
+      margin-bottom: 10px;
+      width: 100%;
+      border-radius: 4px;
+      border: 1px solid #eee; /* 添加边框 */
+    }
+    
+    /* 表格hover效果 */
+    .table tr:hover {
+      background-color: rgba(0,0,0,0.02);
+    }
+    
+    .table-summary {
+      font-style: italic;
+      text-align: right;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Markdown样式压缩 */
+    .markdown-body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.5;
+      color: #333;
+      font-size: 14px; /* 减小Markdown内容字体 */
+    }
+    
+    /* 美化表格 */
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+      font-size: 12px; /* 减小Markdown表格字体 */
+    }
+    
+    .markdown-body th,
+    .markdown-body td {
+      border: 1px solid #dfe2e5;
+      padding: 6px 8px; /* 减小单元格内边距 */
+    }
+    
+    .markdown-body th {
+      background-color: #f6f8fa;
+      font-weight: 600;
+    }
+    
+    .markdown-body tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    
+    /* 标题样式 */
+    .markdown-body h1, 
+    .markdown-body h2, 
+    .markdown-body h3, 
+    .markdown-body h4 {
+      margin-top: 16px;
+      margin-bottom: 12px;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+    
+    .markdown-body h1 { font-size: 1.5rem; }
+    .markdown-body h2 { font-size: 1.3rem; }
+    .markdown-body h3 { 
+      font-size: 1.1rem;
+      color: #0366d6;
+    }
+    .markdown-body h4 { font-size: 1rem; }
+    
+    /* 列表样式 */
+    .markdown-body ul,
+    .markdown-body ol {
+      padding-left: 2em;
+    }
+    
+    .markdown-body li + li {
+      margin-top: 0.25em;
+    }
+    
+    /* 代码块样式 */
+    .markdown-body code:not([class*="language-"]) {
+      padding: 0.2em 0.4em;
+      margin: 0;
+      font-size: 85%;
+      background-color: rgba(27,31,35,0.05);
+      border-radius: 3px;
+    }
+    
+    /* 改善Markdown中插入的表格样式 */
+    .markdown-body table {
+      display: table;
+      width: 100%;
+      overflow-x: auto;
+    }
+    
+    /* 添加指令标题样式 */
+    .instruction-title {
+      background-color: #e9f5ff;
+      border-left: 4px solid #0d6efd;
+      padding: 12px 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 15px;
+      color: #333;
+      animation: fadeIn 0.5s;
+    }
+    
+    /* 步骤执行样式 */
+    .step-execution {
+      margin-left: 20px;
+      margin-bottom: 25px;
+      animation: slideInRight 0.5s;
+      position: relative;
+    }
+    
+    .step-execution::before {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background-color: #eee;
+      border-radius: 3px;
+    }
+    
+    /* 动画效果 */
+    @keyframes slideInRight {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    
+    /* 添加标题和内容分离样式 */
+    .title-container {
+      background-color: #e9f5ff;
+      border-left: 4px solid #0d6efd;
+      padding: 12px 15px;
+      margin-bottom: 0; /* 初始没有底部间距 */
+      border-radius: 6px 6px 0 0;
+      font-weight: 600;
+      font-size: 15px;
+      color: #333;
+      animation: fadeIn 0.5s;
+      position: relative;
+    }
+    
+    /* 添加思考中动画效果 */
+    .thinking {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      display: flex;
+      align-items: center;
+      color: #666;
+      font-style: italic;
+      animation: fadeIn 0.3s;
+    }
+    
+    .thinking-dots {
+      margin-left: 8px;
+      display: inline-flex;
+    }
+    
+    .thinking-dots span {
+      width: 6px;
+      height: 6px;
+      background-color: #0d6efd;
+      border-radius: 50%;
+      margin: 0 2px;
+      opacity: 0.6;
+      animation: thinkingDot 1.4s infinite ease-in-out;
+    }
+    
+    .thinking-dots span:nth-child(1) {
+      animation-delay: 0s;
+    }
+    
+    .thinking-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+    
+    .thinking-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+    
+    @keyframes thinkingDot {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-4px); }
+    }
+    
+    /* 让内容看起来是思考后的结果 */
+    .result-content {
+      margin-top: 0;
+      margin-bottom: 25px;
+      animation: fadeIn 0.5s;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      overflow: hidden;
+    }
+    
+    .result-content .content-item {
+      margin-top: 0;
+      border-top: none;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+    }
+    
+    /* 步骤标题样式 */
+    .step-title {
+      background-color: #f0f7ff;
+      border-left: 4px solid #0d6efd;
+      padding: 10px 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 15px;
+      color: #333;
+      animation: fadeIn 0.5s;
+    }
+    
+    /* 步骤内容样式 */
+    .step-content {
+      margin-left: 20px;
+      margin-bottom: 25px;
+      position: relative;
+      animation: fadeIn 0.5s;
+    }
+    
+    .step-content::before {
+      content: "";
+      position: absolute;
+      left: -20px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background-color: #eee;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="main-container">
+    <!-- 左侧面板：聊天输出 -->
+    <div class="panel-container">
+      <div class="panel-header">
+        <h1 class="panel-title">ChatStream流式输出测试</h1>
+        <div class="panel-controls">
+          <button id="checkBtn" class="btn btn-outline-secondary btn-sm btn-custom">检查服务状态</button>
+          <span id="status" class="status-badge"></span>
+        </div>
+      </div>
+      
+      <div id="statusPanel" class="status-panel"></div>
+      
+      <div class="panel-controls">
+        <button id="startBtn" class="btn btn-primary btn-custom">开始测试</button>
+        <button id="stopBtn" class="btn btn-danger btn-custom" disabled>停止测试</button>
+      </div>
+      
+      <div id="chatContainer" class="panel-content chat-container"></div>
+      
+      <div class="panel-footer">
+        <div class="debug-toggle" id="debugToggle">🛠️ 显示调试信息</div>
+        <div class="debug-info" id="debugInfo" style="display: none;"></div>
+      </div>
+    </div>
+    
+    <!-- 右侧面板：API输出 -->
+    <div class="panel-container">
+      <div class="panel-header">
+        <h2 class="panel-title">API接口内容</h2>
+        <div class="panel-controls">
+          <button id="clearApiBtn" class="btn btn-outline-secondary btn-sm">清空</button>
+        </div>
+      </div>
+      
+      <div class="status-panel" style="visibility: hidden;">占位内容</div>
+      
+      <div class="panel-controls" style="visibility: hidden;">
+        <button class="btn btn-primary btn-custom">占位按钮</button>
+        <button class="btn btn-danger btn-custom">占位按钮</button>
+      </div>
+      
+      <div id="apiContent" class="panel-content api-content"></div>
+      
+      <div class="panel-footer">
+        <button id="copyApiBtn" class="btn btn-sm btn-outline-primary">复制内容</button>
+        <label><input type="checkbox" id="autoScrollApi" checked> 自动滚动</label>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const checkBtn = document.getElementById('checkBtn');
+    const statusSpan = document.getElementById('status');
+    const chatContainer = document.getElementById('chatContainer');
+    const statusPanel = document.getElementById('statusPanel');
+    const debugInfoDiv = document.getElementById('debugInfo');
+    const debugToggle = document.getElementById('debugToggle');
+    const apiContentDiv = document.getElementById('apiContent');
+    const clearApiBtn = document.getElementById('clearApiBtn');
+    const copyApiBtn = document.getElementById('copyApiBtn');
+    const autoScrollApiCheck = document.getElementById('autoScrollApi');
+    let eventSource = null;
+    let chartInstances = [];
+    
+    // 用于存储标题和内容的映射关系
+    let pendingTitles = {};
+    
+    // 更新调试面板切换
+    debugToggle.addEventListener('click', function() {
+      if (debugInfoDiv.style.display === 'none') {
+        debugInfoDiv.style.display = 'block';
+        debugToggle.textContent = '🛠️ 隐藏调试信息';
+      } else {
+        debugInfoDiv.style.display = 'none';
+        debugToggle.textContent = '🛠️ 显示调试信息';
+      }
+    });
+    
+    function addSystemMessage(message, className = '') {
+      const now = new Date();
+      const time = now.toLocaleTimeString() + '.' + now.getMilliseconds();
+      
+      // 清空状态面板，只显示最新状态
+      statusPanel.innerHTML = '';
+      
+      // 添加到状态面板
+      const statusHtml = `<div class="status-message ${className}"><span class="time">${time}</span>${message}</div>`;
+      statusPanel.innerHTML = statusHtml;
+      statusPanel.className = `status-panel ${className}`;
+      
+      // 不再将系统消息添加到聊天容器
+      // const chatHtml = `<div class="system-message ${className}"><span class="time">${time}</span>${message}</div>`;
+      // chatContainer.insertAdjacentHTML('beforeend', chatHtml);
+      
+      // 添加到调试信息
+      addDebugInfo(`系统消息: ${message}`);
+    }
+    
+    function addDebugInfo(message) {
+      const now = new Date();
+      const time = now.toLocaleTimeString() + '.' + now.getMilliseconds();
+      debugInfoDiv.innerHTML += `[${time}] ${message}\n`;
+      debugInfoDiv.scrollTop = debugInfoDiv.scrollHeight;
+    }
+    
+    function renderContent(contentData) {
+      try {
+        const data = JSON.parse(contentData);
+        addDebugInfo(`解析内容数据: ${data.type}, 标题: ${data.title}`);
+        
+        // 找到对应的标题ID
+        let matchedTitleId = null;
+        for (const titleId in pendingTitles) {
+          if (pendingTitles[titleId].title === data.title) {
+            matchedTitleId = titleId;
+            break;
+          }
+        }
+        
+        const contentId = 'content-' + Date.now();
+        
+        let contentHtml = `<div class="result-content" id="result-${contentId}">
+          <div class="content-item">
+            <div class="content-header">
+              <span>${data.title}</span>
+              <span class="content-type-badge ${data.type === 'text' ? 'type-text' : data.type === 'code' ? 'type-code' : data.type === 'sql' ? 'type-sql' : data.type === 'table' ? 'type-table' : 'type-chart'}">${data.type.toUpperCase()}</span>
+            </div>
+            <div class="content-body" id="${contentId}">`;
+        
+        switch (data.type) {
+          case 'text':
+            contentHtml += `<div class="text-content markdown-body" id="md-${contentId}"></div>`;
+            break;
+            
+          case 'code':
+            contentHtml += `<pre class="code-block"><code class="language-${data.language || 'plaintext'}">${data.content}</code></pre>`;
+            break;
+            
+          case 'sql':
+            contentHtml += `<pre class="sql-block"><code class="language-sql">${data.content}</code></pre>`;
+            break;
+            
+          case 'chart':
+            contentHtml += `<div class="chart-container" id="chart-${contentId}"></div>`;
+            break;
+            
+          case 'table':
+            contentHtml += renderTable(data);
+            break;
+            
+          default:
+            contentHtml += `<p>未知内容类型: ${data.type}</p>`;
+        }
+        
+        contentHtml += `</div></div></div>`;
+        
+        // 如果找到匹配的标题，移除"思考中"状态，并添加内容
+        if (matchedTitleId) {
+          const thinkingElement = document.getElementById(`thinking-${matchedTitleId}`);
+          if (thinkingElement) {
+            // 模拟思考时间，至少100ms
+            const elapsedTime = Date.now() - pendingTitles[matchedTitleId].timestamp;
+            const delay = Math.max(0, 100 - elapsedTime);
+            
+            setTimeout(() => {
+              thinkingElement.remove();
+              document.getElementById(matchedTitleId).insertAdjacentHTML('afterend', contentHtml);
+              
+              // 处理Markdown内容
+              if (data.type === 'text') {
+                const mdElement = document.getElementById(`md-${contentId}`);
+                if (mdElement) {
+                  mdElement.innerHTML = marked.parse(data.content);
+                }
+              }
+              
+              // 处理代码高亮
+              if (data.type === 'code' || data.type === 'sql') {
+                setTimeout(() => {
+                  document.querySelectorAll(`#${contentId} pre code`).forEach((block) => {
+                    hljs.highlightElement(block);
+                  });
+                }, 100);
+              }
+              
+              // 处理Markdown中的代码块
+              if (data.type === 'text') {
+                setTimeout(() => {
+                  document.querySelectorAll(`#md-${contentId} pre code`).forEach((block) => {
+                    hljs.highlightElement(block);
+                  });
+                }, 100);
+              }
+              
+              // 处理图表
+              if (data.type === 'chart') {
+                setTimeout(() => {
+                  const chartDom = document.getElementById(`chart-${contentId}`);
+                  if (chartDom) {
+                    const chart = echarts.init(chartDom);
+                    
+                    const option = {
+                      title: {
+                        show: false, /* 隐藏标题 */
+                      },
+                      tooltip: {
+                        trigger: 'axis',
+                        confine: true,
+                        formatter: function(params) {
+                          let result = params[0].name + '<br/>';
+                          params.forEach(param => {
+                            // 使用圆点而不是方块代表图例颜色
+                            result += `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background-color:${param.color};margin-right:5px;"></span>`;
+                            result += `${param.seriesName}: <strong>${param.value}</strong><br/>`;
+                          });
+                          return result;
+                        }
+                      },
+                      legend: {
+                        type: 'scroll',
+                        textStyle: {
+                          fontSize: 11
+                        },
+                        padding: [5, 10],
+                        itemWidth: 15,
+                        itemHeight: 10,
+                        icon: 'circle' /* 使用圆形图例标记 */
+                      },
+                      grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '10%',
+                        top: '10%', /* 由于没有标题，可以减少顶部空间 */
+                        containLabel: true
+                      },
+                      xAxis: {
+                        type: 'category',
+                        axisLabel: {
+                          interval: 'auto',
+                          rotate: 45,
+                          fontSize: 10,
+                          margin: 8
+                        },
+                        axisTick: {
+                          alignWithLabel: true /* 刻度与标签对齐 */
+                        }
+                      },
+                      yAxis: {
+                        type: 'value',
+                        axisLabel: {
+                          fontSize: 10
+                        },
+                        splitLine: {
+                          lineStyle: {
+                            type: 'dashed' /* 虚线网格 */
+                          }
+                        }
+                      },
+                      series: data.data.series.map(s => ({
+                        name: s.name,
+                        type: data.chartType || 'bar',
+                        data: s.data,
+                        label: {
+                          show: false,
+                          position: 'top',
+                          fontSize: 10
+                        },
+                        itemStyle: {
+                          borderRadius: [3, 3, 0, 0] /* 柱状图圆角 */
+                        },
+                        emphasis: {
+                          itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.2)'
+                          }
+                        }
+                      }))
+                    };
+                    
+                    chart.setOption(option);
+                    chartInstances.push(chart);
+                    
+                    // 确保图表能正确调整大小
+                    window.addEventListener('resize', () => {
+                      chart.resize();
+                    });
+                    
+                    addDebugInfo(`图表已渲染: ${data.title}`);
+                  }
+                }, 100);
+              }
+              
+              scrollToBottom();
+              
+              // 从待处理标题中移除
+              delete pendingTitles[matchedTitleId];
+            }, delay);
+          }
+        } else {
+          // 如果没有匹配的标题，直接添加内容
+          chatContainer.insertAdjacentHTML('beforeend', contentHtml);
+          
+          // 处理各种内容类型...
+          // 内容处理代码与上面相同
+        }
+        
+      } catch (error) {
+        addDebugInfo(`解析内容错误: ${error.message}`);
+        addSystemMessage(`无法解析内容: ${error.message}`, 'error');
+      }
+    }
+    
+    function renderTable(data) {
+      if (!data.headers || !data.rows) {
+        return '<p>表格数据格式错误</p>';
+      }
+      
+      let tableHtml = '<div class="table-responsive">';
+      tableHtml += '<table class="table table-hover">';
+      
+      // 表头
+      tableHtml += '<thead class="table-light"><tr>';
+      data.headers.forEach(header => {
+        tableHtml += `<th scope="col">${header}</th>`;
+      });
+      tableHtml += '</tr></thead>';
+      
+      // 表体
+      tableHtml += '<tbody>';
+      data.rows.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach((cell, index) => {
+          const cellContent = String(cell);
+          // 对长文本进行处理，缩短超过20个字符的文本
+          if (cellContent.length > 20) {
+            // 如果是第一列，用th标签增强语义和视觉区分
+            if (index === 0) {
+              tableHtml += `<th scope="row" class="text-truncate">${cellContent.substring(0, 20)}...
+                             <div class="full-text">${cellContent}</div></th>`;
+            } else {
+              tableHtml += `<td class="text-truncate">${cellContent.substring(0, 20)}...
+                             <div class="full-text">${cellContent}</div></td>`;
+            }
+          } else {
+            // 正常文本处理
+            if (index === 0) {
+              tableHtml += `<th scope="row">${cellContent}</th>`;
+            } else {
+              tableHtml += `<td>${cellContent}</td>`;
+            }
+          }
+        });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table></div>';
+      
+      // 添加表格数据摘要
+      if (data.rows.length > 0) {
+        tableHtml += `<div class="table-summary text-muted small mt-2">显示 ${data.rows.length} 行数据，${data.headers.length} 列</div>`;
+      }
+      
+      return tableHtml;
+    }
+    
+    // 添加新的滚动到底部函数
+    function scrollToBottom() {
+      // 给一点延迟确保DOM更新完成
+      setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 200); // 延长延迟时间到200ms
+    }
+    
+    // 检查服务是否可访问
+    checkBtn.addEventListener('click', function() {
+      statusSpan.textContent = "检查中...";
+      statusSpan.className = "status-badge";
+      addSystemMessage("正在检查服务状态...");
+      addDebugInfo("开始检查服务");
+      
+      fetch('http://localhost:8080/api/chatstream/hello')
+        .then(response => {
+          addDebugInfo(`服务响应状态码: ${response.status}`);
+          if (response.ok) {
+            return response.text();
+          }
+          throw new Error('服务器响应错误: ' + response.status);
+        })
+        .then(data => {
+          addDebugInfo(`服务响应数据: ${data}`);
+          console.log('服务可用，返回:', data);
+          statusSpan.textContent = "服务正常";
+          statusSpan.className = "status-badge bg-success text-white";
+          addSystemMessage(`服务检查成功: ${data}`, 'success');
+        })
+        .catch(error => {
+          addDebugInfo(`服务检查错误: ${error.message}`);
+          console.error('服务检查错误:', error);
+          statusSpan.textContent = "服务不可用";
+          statusSpan.className = "status-badge bg-danger text-white";
+          addSystemMessage(`服务检查失败: ${error.message}`, 'error');
+        });
+    });
+    
+    /**
+     * 后端接口修改建议:
+     * 
+     * 1. 步骤标题和内容需要分开发送，以便前端能够按顺序展示
+     * 2. 每个步骤应该先发送标题，然后发送对应内容
+     * 
+     * 建议的后端接口输出格式:
+     * 
+     * // 发送步骤1标题
+     * {
+     *   "type": "step-title",
+     *   "title": "步骤1：查看现有的BI报表，匹配符合条件",
+     *   "step": 1
+     * }
+     * 
+     * // 发送步骤1内容
+     * {
+     *   "type": "text", // 或其他类型: code, sql, table, chart
+     *   "title": "步骤1：查看现有的BI报表，匹配符合条件",
+     *   "step": 1,
+     *   "content": "这里是步骤1的详细内容...",
+     *   "language": "plaintext" // 对于code类型需要指定语言
+     * }
+     * 
+     * // 发送步骤2标题
+     * {
+     *   "type": "step-title",
+     *   "title": "步骤2：尝试通过SQL数据集查询，找到合适的数据集",
+     *   "step": 2
+     * }
+     * 
+     * // 发送步骤2内容
+     * {
+     *   "type": "sql",
+     *   "title": "步骤2：尝试通过SQL数据集查询，找到合适的数据集",
+     *   "step": 2,
+     *   "content": "SELECT * FROM data_set WHERE condition = 'value';"
+     * }
+     */
+    
+    // 处理SSE事件
+    function setupEventSource() {
+      try {
+        addDebugInfo("开始创建SSE连接");
+        eventSource = new EventSource('http://localhost:8080/api/chatstream/sse');
+        addDebugInfo(`EventSource已创建, readyState=${eventSource.readyState}`);
+        
+        // 连接打开事件
+        eventSource.onopen = function(event) {
+          addDebugInfo("SSE连接已打开");
+        };
+        
+        // 默认消息处理
+        eventSource.onmessage = function(event) {
+          addDebugInfo(`收到默认消息: ${event.data}`);
+          console.log('收到默认消息:', event.data);
+          addSystemMessage(`收到消息: ${event.data}`);
+        };
+        
+        // 连接成功消息
+        eventSource.addEventListener('connected', function(event) {
+          addDebugInfo(`收到connected事件: ${event.data}`);
+          console.log('连接成功:', event.data);
+          addSystemMessage(`${event.data}`, 'success');
+          addApiContent(event.data);
+        });
+        
+        // 步骤标题事件 - 新增专门处理步骤标题的事件
+        eventSource.addEventListener('step-title', function(event) {
+          addDebugInfo(`收到step-title事件: ${event.data}`);
+          const data = JSON.parse(event.data);
+          if (data.step && data.title) {
+            const stepNumber = data.step;
+            const stepDescription = data.title.replace(/^步骤\d+[:：]?\s*/, '');
+            renderStepTitle(stepNumber, stepDescription);
+          }
+          addApiContent(event.data);
+        });
+        
+        // 内容消息 - 可以处理步骤内容和普通内容
+        eventSource.addEventListener('content', function(event) {
+          addDebugInfo(`收到content事件: ${event.data.substring(0, 100)}...`);
+          processContent(event.data);
+          scrollToBottom();
+          addApiContent(event.data);
+        });
+        
+        // 完成消息
+        eventSource.addEventListener('completed', function(event) {
+          addDebugInfo(`收到completed事件: ${event.data}`);
+          console.log('完成:', event.data);
+          addSystemMessage(`${event.data}`, 'success');
+          addApiContent(event.data);
+          closeConnection();
+        });
+        
+        // 错误处理
+        eventSource.onerror = function(event) {
+          const errorInfo = JSON.stringify(event);
+          addDebugInfo(`SSE错误: ${errorInfo}`);
+          console.error('SSE错误:', event);
+          addSystemMessage('连接发生错误或已关闭', 'error');
+          closeConnection();
+        };
+        
+      } catch (error) {
+        const errorInfo = JSON.stringify(error, Object.getOwnPropertyNames(error));
+        addDebugInfo(`创建EventSource时出错: ${errorInfo}`);
+        console.error('创建EventSource时出错:', error);
+        addSystemMessage(`创建连接时发生错误: ${error.message}`, 'error');
+        closeConnection();
+      }
+    }
+    
+    // 处理接收到的内容
+    function processContent(contentData) {
+      try {
+        const data = JSON.parse(contentData);
+        addDebugInfo(`处理内容: ${data.type}, 标题: ${data.title}`);
+        
+        // 处理步骤专用内容类型
+        if (data.type === 'step-title') {
+          // 步骤标题已经由专门的事件处理器处理，这里是后备方案
+          if (data.step && data.title) {
+            const stepNumber = data.step;
+            const stepDescription = data.title.replace(/^步骤\d+[:：]?\s*/, '');
+            renderStepTitle(stepNumber, stepDescription);
+          }
+          return;
+        }
+        
+        // 检查是否是步骤内容
+        if (data.step && data.title && data.title.includes('步骤')) {
+          // 这是一个带步骤号的内容
+          const stepNumber = data.step;
+          renderStepContent(data, stepNumber);
+        } 
+        // 检查是否是步骤标题（旧格式兼容）
+        else if (data.title && data.title.includes('步骤')) {
+          // 将标题分为两部分：步骤号和步骤描述
+          const titleMatch = data.title.match(/步骤(\d+)[:：]?\s*(.*)/);
+          if (titleMatch) {
+            const stepNumber = titleMatch[1];
+            const stepDescription = titleMatch[2];
+            
+            // 判断是标题还是内容
+            if (data.type === 'text' && data.content && data.content.trim().length > 0) {
+              // 这是步骤内容，先展示标题再展示内容
+              renderStepTitle(stepNumber, stepDescription);
+              setTimeout(() => {
+                renderStepContent(data, stepNumber);
+              }, 100); // 延迟100ms显示内容
+            } else {
+              // 这只是步骤标题，直接显示
+              renderStepTitle(stepNumber, stepDescription);
+            }
+          } else {
+            // 标题格式不符合预期，按普通内容处理
+            renderContent(data);
+          }
+        } else {
+          // 不是步骤格式，按普通内容处理
+          renderContent(data);
+        }
+      } catch (error) {
+        addDebugInfo(`处理内容错误: ${error.message}`);
+        addSystemMessage(`处理内容错误: ${error.message}`, 'error');
+      }
+    }
+    
+    // 渲染步骤标题
+    function renderStepTitle(stepNumber, description) {
+      const titleId = `step-title-${stepNumber}`;
+      
+      // 检查是否已经存在该步骤标题
+      if (document.getElementById(titleId)) {
+        return; // 已经存在，不重复创建
+      }
+      
+      const titleHtml = `
+        <div class="step-title" id="${titleId}">
+          步骤${stepNumber}：${description}
+        </div>
+      `;
+      
+      chatContainer.insertAdjacentHTML('beforeend', titleHtml);
+      scrollToBottom();
+    }
+    
+    // 渲染步骤内容
+    function renderStepContent(data, stepNumber) {
+      const contentId = `content-${Date.now()}`;
+      const stepContentId = `step-content-${stepNumber}`;
+      
+      // 检查是否已经存在该步骤内容
+      if (document.getElementById(stepContentId)) {
+        return; // 已经存在，不重复创建
+      }
+      
+      let contentHtml = `
+        <div class="step-content" id="${stepContentId}">
+          <div class="content-item">
+            <div class="content-body" id="${contentId}">`;
+      
+      switch (data.type) {
+        case 'text':
+          contentHtml += `<div class="text-content markdown-body" id="md-${contentId}"></div>`;
+          break;
+          
+        case 'code':
+          contentHtml += `<pre class="code-block"><code class="language-${data.language || 'plaintext'}">${data.content}</code></pre>`;
+          break;
+          
+        case 'sql':
+          contentHtml += `<pre class="sql-block"><code class="language-sql">${data.content}</code></pre>`;
+          break;
+          
+        case 'chart':
+          contentHtml += `<div class="chart-container" id="chart-${contentId}"></div>`;
+          break;
+          
+        case 'table':
+          contentHtml += renderTable(data);
+          break;
+          
+        default:
+          contentHtml += `<p>未知内容类型: ${data.type}</p>`;
+      }
+      
+      contentHtml += `</div></div></div>`;
+      
+      // 找到对应的标题元素并在其后插入内容
+      const titleElement = document.getElementById(`step-title-${stepNumber}`);
+      if (titleElement) {
+        titleElement.insertAdjacentHTML('afterend', contentHtml);
+        
+        // 处理Markdown内容
+        if (data.type === 'text') {
+          const mdElement = document.getElementById(`md-${contentId}`);
+          if (mdElement) {
+            mdElement.innerHTML = marked.parse(data.content);
+          }
+        }
+        
+        // 处理代码高亮
+        if (data.type === 'code' || data.type === 'sql') {
+          setTimeout(() => {
+            document.querySelectorAll(`#${contentId} pre code`).forEach((block) => {
+              hljs.highlightElement(block);
+            });
+          }, 100);
+        }
+        
+        // 处理Markdown中的代码块
+        if (data.type === 'text') {
+          setTimeout(() => {
+            document.querySelectorAll(`#md-${contentId} pre code`).forEach((block) => {
+              hljs.highlightElement(block);
+            });
+          }, 100);
+        }
+        
+        // 处理图表
+        if (data.type === 'chart') {
+          setTimeout(() => {
+            const chartDom = document.getElementById(`chart-${contentId}`);
+            if (chartDom) {
+              const chart = echarts.init(chartDom);
+              // 图表配置代码...
+              chart.setOption(option);
+              chartInstances.push(chart);
+            }
+          }, 100);
+        }
+      } else {
+        // 找不到对应标题，直接添加到容器末尾
+        chatContainer.insertAdjacentHTML('beforeend', contentHtml);
+        // 处理内容代码与上面相同...
+      }
+      
+      scrollToBottom();
+    }
+    
+    // 渲染普通内容（非步骤）
+    function renderContent(data) {
+      const contentId = `content-${Date.now()}`;
+      
+      let contentHtml = `
+        <div class="content-item">
+          <div class="content-header">
+            <span>${data.title}</span>
+            <span class="content-type-badge ${data.type === 'text' ? 'type-text' : data.type === 'code' ? 'type-code' : data.type === 'sql' ? 'type-sql' : data.type === 'table' ? 'type-table' : 'type-chart'}">${data.type.toUpperCase()}</span>
+          </div>
+          <div class="content-body" id="${contentId}">`;
+      
+      switch (data.type) {
+        case 'text':
+          contentHtml += `<div class="text-content markdown-body" id="md-${contentId}"></div>`;
+          break;
+          
+        case 'code':
+          contentHtml += `<pre class="code-block"><code class="language-${data.language || 'plaintext'}">${data.content}</code></pre>`;
+          break;
+          
+        case 'sql':
+          contentHtml += `<pre class="sql-block"><code class="language-sql">${data.content}</code></pre>`;
+          break;
+          
+        case 'chart':
+          contentHtml += `<div class="chart-container" id="chart-${contentId}"></div>`;
+          break;
+          
+        case 'table':
+          contentHtml += renderTable(data);
+          break;
+          
+        default:
+          contentHtml += `<p>未知内容类型: ${data.type}</p>`;
+      }
+      
+      contentHtml += `</div></div>`;
+      
+      chatContainer.insertAdjacentHTML('beforeend', contentHtml);
+      
+      // 处理Markdown内容
+      if (data.type === 'text') {
+        const mdElement = document.getElementById(`md-${contentId}`);
+        if (mdElement) {
+          mdElement.innerHTML = marked.parse(data.content);
+        }
+      }
+      
+      // 处理代码高亮、图表等（与步骤内容处理相同）...
+      // 处理代码略...
+    }
+    
+    // 修改开始按钮事件处理
+    startBtn.addEventListener('click', function() {
+      chatContainer.innerHTML = '';
+      statusPanel.innerHTML = '';
+      debugInfoDiv.innerHTML = '';
+      apiContentDiv.innerHTML = '';
+      pendingTitles = {}; // 重置待处理标题
+      
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+      chartInstances = [];
+      
+      addSystemMessage('开始接收数据流...');
+      
+      setupEventSource();
+      
+      addSystemMessage('已连接到服务器，等待数据...');
+      addDebugInfo("等待SSE数据...");
+    });
+    
+    stopBtn.addEventListener('click', function() {
+      closeConnection();
+      addSystemMessage('手动断开连接');
+      addDebugInfo("手动断开SSE连接");
+    });
+    
+    function closeConnection() {
+      if (eventSource) {
+        addDebugInfo(`关闭SSE连接, 当前状态: ${eventSource.readyState}`);
+        eventSource.close();
+        eventSource = null;
+      }
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    }
+    
+    // 监听窗口大小变化，调整图表大小
+    window.addEventListener('resize', function() {
+      chartInstances.forEach(chart => {
+        chart.resize();
+      });
+    });
+    
+    // 清空API内容
+    clearApiBtn.addEventListener('click', function() {
+      apiContentDiv.innerHTML = '';
+    });
+    
+    // 复制API内容
+    copyApiBtn.addEventListener('click', function() {
+      const content = apiContentDiv.textContent;
+      navigator.clipboard.writeText(content)
+        .then(() => {
+          const originalText = copyApiBtn.textContent;
+          copyApiBtn.textContent = '已复制!';
+          setTimeout(() => {
+            copyApiBtn.textContent = originalText;
+          }, 2000);
+        })
+        .catch(err => {
+          console.error('无法复制内容: ', err);
+        });
+    });
+    
+    // 添加API内容
+    function addApiContent(data) {
+      const now = new Date();
+      const time = now.toLocaleTimeString() + '.' + now.getMilliseconds();
+      
+      // 判断是否是系统消息（连接状态等）
+      const isSystemMessage = typeof data === 'string' && 
+        (data.includes('连接已建立') || 
+         data.includes('已完成') || 
+         data.includes('开始') || 
+         data.includes('等待') ||
+         data.includes('错误'));
+      
+      // 如果是系统消息，只在调试模式下显示
+      if (isSystemMessage && debugInfoDiv.style.display === 'none') {
+        // 不添加系统消息到API内容区
+        return;
+      }
+      
+      // 格式化JSON数据
+      let formattedData;
+      try {
+        // 尝试解析为JSON并格式化
+        const parsedData = JSON.parse(data);
+        formattedData = JSON.stringify(parsedData, null, 2);
+      } catch (e) {
+        // 如果不是JSON，直接使用
+        formattedData = data;
+      }
+      
+      const contentHtml = `<div class="api-message">
+        <span class="time">[${time}]</span>
+        <pre>${formattedData}</pre>
+      </div>`;
+      
+      apiContentDiv.insertAdjacentHTML('beforeend', contentHtml);
+      
+      // 自动滚动到底部
+      if (autoScrollApiCheck.checked) {
+        apiContentDiv.scrollTop = apiContentDiv.scrollHeight;
+      }
+    }
+    
+    // 确保两个容器高度一致
+    window.addEventListener('load', function() {
+      // 确保API容器和主容器的高度一致
+      function adjustContainersHeight() {
+        const containers = document.querySelectorAll('.panel-container');
+        if (window.innerWidth > 1100) { // 只在桌面布局时调整
+          let maxHeight = 0;
+          containers.forEach(container => {
+            maxHeight = Math.max(maxHeight, container.scrollHeight);
+          });
+          containers.forEach(container => {
+            container.style.height = maxHeight + 'px';
+          });
+        } else {
+          // 在移动布局中重置高度
+          containers.forEach(container => {
+            container.style.height = 'auto';
+          });
+        }
+      }
+      
+      // 初始调整和窗口大小改变时调整
+      setTimeout(adjustContainersHeight, 100); // 延迟执行以确保DOM完全渲染
+      window.addEventListener('resize', adjustContainersHeight);
+    });
+  </script>
+</body>
+</html>
