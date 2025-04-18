@@ -20,6 +20,10 @@
   </licenses>
   <dependencies>
     <dependency>
+      <groupId>tech.rowing</groupId>
+      <artifactId>chat-bi-ui</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>

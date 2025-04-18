@@ -21,6 +21,7 @@
     <!-- 根据实际情况调整模块 -->
     <modules>
         <module>chat-bi-core</module>
+        <module>chat-bi-ui</module>
     </modules>
 
     <properties>
@@ -73,6 +74,11 @@
             <dependency>
                 <groupId>tech.rowing</groupId>
                 <artifactId>chat-bi-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.rowing</groupId>
+                <artifactId>chat-bi-ui</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
