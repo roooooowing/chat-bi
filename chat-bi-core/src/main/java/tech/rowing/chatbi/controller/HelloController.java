@@ -1,10 +1,9 @@
 package tech.rowing.chatbi.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 测试控制器
@@ -22,4 +21,4 @@ public class HelloController {
         log.debug("访问hello接口");
         return "Hello, Chat BI!";
     }
-} 
+}

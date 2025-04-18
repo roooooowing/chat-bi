@@ -18,4 +18,4 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedHeaders("*")
                 .maxAge(3600);
     }
-} 
+}

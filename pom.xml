@@ -3,9 +3,10 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-build</artifactId>
-        <version>2.3.1.RELEASE</version>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.7.5</version>
+        <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>tech.rowing</groupId>
@@ -17,16 +18,9 @@
 
     <description>Chat BI智能助手</description>
 
+    <!-- 根据实际情况调整模块 -->
     <modules>
-        <!--基础型-->
-        <module>chat-bi-base</module>
-        <!--功能型-->
         <module>chat-bi-core</module>
-        <module>chat-bi-ui</module>
-        <!--汇总型-->
-        <module>chat-bi-all</module>
-        <!--特殊型-->
-        <module>service</module>
     </modules>
 
     <properties>
@@ -78,22 +72,7 @@
             <!-- 内部模块依赖 -->
             <dependency>
                 <groupId>tech.rowing</groupId>
-                <artifactId>chat-bi-all</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>tech.rowing</groupId>
                 <artifactId>chat-bi-core</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>tech.rowing</groupId>
-                <artifactId>chat-bi-base</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>tech.rowing</groupId>
-                <artifactId>chat-bi-ui</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
