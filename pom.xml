@@ -3,60 +3,218 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.5</version>
-        <relativePath/>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-build</artifactId>
+        <version>2.3.1.RELEASE</version>
     </parent>
-    <groupId>com.example</groupId>
-    <artifactId>tool-web</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>tool-web</name>
-    <description>Tool Web 应用</description>
-    
+
+    <groupId>tech.rowing</groupId>
+    <artifactId>chat-bi-parent</artifactId>
+    <name>chat-bi</name>
+
+    <packaging>pom</packaging>
+    <version>${revision}</version>
+
+    <description>Chat BI智能助手</description>
+
+    <modules>
+        <!--基础型-->
+        <module>chat-bi-base</module>
+        <!--功能型-->
+        <module>chat-bi-core</module>
+        <module>chat-bi-ui</module>
+        <!--汇总型-->
+        <module>chat-bi-all</module>
+        <!--特殊型-->
+        <module>service</module>
+    </modules>
+
     <properties>
+        <!-- 项目版本 -->
+        <revision>1.0.0-SNAPSHOT</revision>
+        
+        <!-- 基础配置 -->
         <java.version>11</java.version>
+        
+        <!-- 框架依赖版本 -->
+        <spring-boot.version>2.7.5</spring-boot.version>
+        <spring-cloud.version>2021.0.4</spring-cloud.version>
+        <springfox.version>3.0.0</springfox.version>
+        
+        <!-- 工具库版本 -->
+        <hutool.version>5.8.34</hutool.version>
+        <lombok.version>1.18.28</lombok.version>
+        <mapstruct.version>1.5.2.Final</mapstruct.version>
+        <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
+        <gson.version>2.10.1</gson.version>
+        <reactor.version>3.4.24</reactor.version>
+        
+        <!-- 插件版本 -->
+        <maven-compiler.version>3.8.1</maven-compiler.version>
+        <flatten-maven.version>1.1.0</flatten-maven.version>
+        <spotless.version>2.36.0</spotless.version>
     </properties>
     
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-        
-        <dependency>
-            <groupId>io.projectreactor</groupId>
-            <artifactId>reactor-core</artifactId>
-        </dependency>
-        
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-    
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <!-- Spring Cloud -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <!-- 内部模块依赖 -->
+            <dependency>
+                <groupId>tech.rowing</groupId>
+                <artifactId>chat-bi-all</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.rowing</groupId>
+                <artifactId>chat-bi-core</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.rowing</groupId>
+                <artifactId>chat-bi-base</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tech.rowing</groupId>
+                <artifactId>chat-bi-ui</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- 工具库依赖 -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${reactor.version}</version>
+            </dependency>
+
+            <!-- API文档 -->
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger2</artifactId>
+                <version>${springfox.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger-ui</artifactId>
+                <version>${springfox.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>${flatten-maven.version}</version>
                 <configuration>
-                    <mainClass>com.example.toolweb.ToolWebApplication</mainClass>
-                    <excludes>
-                        <exclude>
+                    <updatePomFile>true</updatePomFile>
+                    <flattenMode>resolveCiFriendliesOnly</flattenMode>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven-compiler.version}</version>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                    <annotationProcessorPaths>
+                        <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+                            <version>${lombok.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.mapstruct</groupId>
+                            <artifactId>mapstruct-processor</artifactId>
+                            <version>${mapstruct.version}</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>${spotless.version}</version>
+                <configuration>
+                    <java>
+                        <palantirJavaFormat>
+                            <version>${spotless.version}</version>
+                        </palantirJavaFormat>
+                        <importOrder>
+                            <order>,javax|java,\#</order>
+                        </importOrder>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <phase>compile</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
+
 </project> 
